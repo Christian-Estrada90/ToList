@@ -13,9 +13,11 @@ import (
 
 type User struct {
 	ID       uint32 `json:"id"`
-	Name     string `json:"name"`
+	Nombre   string `json:"nombre"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Activo   string `json:"activo"`
+	Fecha    string `json:"fecha"`
 }
 
 // CreateUser inserts a user into the database.
@@ -36,13 +38,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)")
+	statement, err := db.Prepare("INSERT INTO usuario (nombre, email, password, activo, fecha) VALUES (?, ?, ?, ?, ?)")
 	if handleGenericError(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	result, err := statement.Exec(newUser.Name, newUser.Email, newUser.Password)
+	result, err := statement.Exec(newUser.Nombre, newUser.Email, newUser.Password, newUser.Activo, newUser.Fecha)
 	if handleGenericError(w, "Failed to execute statement!", err) {
 		return
 	}
@@ -64,7 +66,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM users")
+	rows, err := db.Query("SELECT * FROM usuario")
 	if handleGenericError(w, "Failed to retrieve users!", err) {
 		return
 	}
@@ -73,7 +75,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password); handleGenericError(w, "Failed to scan users!", err) {
+		if err := rows.Scan(&user.ID, &user.Nombre, &user.Email, &user.Password, &user.Activo, &user.Fecha); handleGenericError(w, "Failed to scan users!", err) {
 			return
 		}
 		users = append(users, user)
@@ -100,7 +102,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	row, err := db.Query("SELECT * FROM users WHERE id = ?", ID)
+	row, err := db.Query("SELECT * FROM usuario WHERE id = ?", ID)
 	if handleGenericError(w, "Failed to retrieve user "+strconv.FormatUint(ID, 10), err) {
 		return
 	}
@@ -108,7 +110,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	var user User
 	if row.Next() {
-		if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password); handleGenericError(w, "Failed to scan users!", err) {
+		if err := row.Scan(&user.ID, &user.Nombre, &user.Email, &user.Password, &user.Activo, &user.Fecha); handleGenericError(w, "Failed to scan users!", err) {
 			return
 		}
 	}
@@ -144,13 +146,13 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?")
+	statement, err := db.Prepare("UPDATE usuario SET name = ?, email = ?, password = ?, activo = ? WHERE id = ?")
 	if handleGenericError(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	if _, err := statement.Exec(updatedUser.Name, updatedUser.Email, updatedUser.Password, ID); handleGenericError(w, "Failed to execute statement!", err) {
+	if _, err := statement.Exec(updatedUser.Nombre, updatedUser.Email, updatedUser.Password, updatedUser.Activo, updatedUser.Fecha, ID); handleGenericError(w, "Failed to execute statement!", err) {
 		return
 	}
 
@@ -172,7 +174,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("DELETE FROM users WHERE id = ?")
+	statement, err := db.Prepare("DELETE FROM usuario WHERE id = ?")
 	if handleGenericError(w, "Failed to create statement!", err) {
 		return
 	}
