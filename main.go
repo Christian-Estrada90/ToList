@@ -17,6 +17,9 @@ func main() {
 	router.HandleFunc("/users/{id}", userService.GetUserByID).Methods(http.MethodGet)
 	router.HandleFunc("/users/{id}", userService.UpdateUser).Methods(http.MethodPut)
 	router.HandleFunc("/users/{id}", userService.DeleteUser).Methods(http.MethodDelete)
+	//Actividades
+	router.HandleFunc("/actividades", userService.CreateActividad).Methods(http.MethodPost)
+	router.HandleFunc("/actividades", userService.GetActividad).Methods(http.MethodGet)
 
 	fmt.Print("Listenning on 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
