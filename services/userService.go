@@ -146,7 +146,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("UPDATE usuario SET name = ?, email = ?, password = ?, activo = ? WHERE id = ?")
+	statement, err := db.Prepare("UPDATE usuario SET nombre = ?, email = ?, password = ?, activo = ?, fecha = ? WHERE id = ?")
 	if handleGenericError(w, "Failed to create statement!", err) {
 		return
 	}
