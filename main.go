@@ -35,7 +35,18 @@ func main() {
 	router.HandleFunc("/users/{id}", userService.DeleteUser).Methods(http.MethodDelete)
 	//Actividades
 	router.HandleFunc("/actividades", userService.CreateActividad).Methods(http.MethodPost)
-	router.HandleFunc("/actividades", userService.GetActividad).Methods(http.MethodGet)
+	router.HandleFunc("/actividades/{id_usuario}", userService.GetActividad).Methods(http.MethodGet)
+	router.HandleFunc("/actividades/{id}", userService.UpdateActividad).Methods(http.MethodPut)
+	router.HandleFunc("/actividades/{id}", userService.DeleteActividad).Methods(http.MethodDelete)
+
+	//Categorias
+	router.HandleFunc("/categorias", userService.GetCategorias).Methods(http.MethodGet)
+
+	//Estados
+	router.HandleFunc("/estados", userService.GetEstados).Methods(http.MethodGet)
+
+	//IMPORTANCIAS
+	router.HandleFunc("/importancias", userService.GetImportancias).Methods(http.MethodGet)
 
 	corsRouter := enableCors(router)
 

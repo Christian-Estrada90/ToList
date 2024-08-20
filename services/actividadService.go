@@ -28,34 +28,44 @@ type Actividad struct {
 // CreateActividad inserts a user into the database.
 func CreateActividad(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
-	if handleGenericError(w, "Failed to read request body!", err) {
+	if handleGenericErrorAc(w, "Failed to read request body!", err) {
 		return
 	}
 
 	var newActividad Actividad
-	if err = json.Unmarshal(body, &newActividad); handleGenericError(w, "Failed to unmarshal request body!", err) {
+	if err = json.Unmarshal(body, &newActividad); handleGenericErrorAc(w, "Failed to unmarshal request body!", err) {
 		return
 	}
 
 	db, err := database.DbConnection()
-	if handleGenericError(w, "Failed to connect to the database!", err) {
+	if handleGenericErrorAc(w, "Failed to connect to the database!", err) {
 		return
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("INSERT INTO actividad (idusuario, idcategoria, idimportancia, idestado, nombre, descripcion, fechafinaliza, fecharealfinaliza, activo, fecharegistro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-	if handleGenericError(w, "Failed to create statement!", err) {
+	statement, err := db.Prepare("INSERT INTO actividad (id_usuario, id_categoria, id_importancia, id_estado, nombre, descripcion, fecha_finaliza, fecha_real_finaliza, activo, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATE())")
+	if handleGenericErrorAc(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	result, err := statement.Exec(newActividad.IDUsuario, newActividad.IDCategoria, newActividad.IDImportancia, newActividad.IDEstado, newActividad.Nombre, newActividad.Descripcion, newActividad.FechaFinaliza, newActividad.FechaRealFinaliza, newActividad.Activo, newActividad.FechaRegistro)
-	if handleGenericError(w, "Failed to execute statement!", err) {
+	result, err := statement.Exec(
+		newActividad.IDUsuario,
+		newActividad.IDCategoria,
+		newActividad.IDImportancia,
+		newActividad.IDEstado,
+		newActividad.Nombre,
+		newActividad.Descripcion,
+		newActividad.FechaFinaliza,
+		newActividad.FechaRealFinaliza,
+		newActividad.Activo,
+	)
+	if handleGenericErrorAc(w, "Failed to execute statement!", err) {
 		return
 	}
 
 	createdID, err := result.LastInsertId()
-	if handleGenericError(w, "Failed to retrieve last insert ID!", err) {
+	if handleGenericErrorAc(w, "Failed to retrieve last insert ID!", err) {
 		return
 	}
 
@@ -65,14 +75,22 @@ func CreateActividad(w http.ResponseWriter, r *http.Request) {
 
 // GetActividad retrieves all users from the database.
 func GetActividad(w http.ResponseWriter, r *http.Request) {
+
+	params := mux.Vars(r)
+
+	IDUsuario, err := strconv.ParseUint(params["id_usuario"], 10, 32)
+	if handleGenericErrorAc(w, "Failed to convert parameter to integer", err) {
+		return
+	}
+
 	db, err := database.DbConnection()
-	if handleGenericError(w, "Failed to connect to the database!", err) {
+	if handleGenericErrorAc(w, "Failed to connect to the database!", err) {
 		return
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM actividad")
-	if handleGenericError(w, "Failed to retrieve actividad!", err) {
+	rows, err := db.Query("SELECT * FROM actividad WHERE id_usuario = ? ORDER BY id_estado asc", IDUsuario)
+	if handleGenericErrorAc(w, "Failed to retrieve actividad!", err) {
 		return
 	}
 	defer rows.Close()
@@ -80,48 +98,25 @@ func GetActividad(w http.ResponseWriter, r *http.Request) {
 	var actividades []Actividad
 	for rows.Next() {
 		var actividad Actividad
-		if err := rows.Scan(&actividad.ID, &actividad.IDUsuario, &actividad.IDCategoria, &actividad.IDImportancia, &actividad.IDEstado, &actividad.Nombre, &actividad.Descripcion, &actividad.FechaFinaliza, &actividad.FechaRealFinaliza, &actividad.Activo, &actividad.FechaRegistro); handleGenericError(w, "Failed to scan actividad!", err) {
+		if err := rows.Scan(
+			&actividad.ID,
+			&actividad.IDUsuario,
+			&actividad.IDCategoria,
+			&actividad.IDImportancia,
+			&actividad.IDEstado,
+			&actividad.Nombre,
+			&actividad.Descripcion,
+			&actividad.FechaFinaliza,
+			&actividad.FechaRealFinaliza,
+			&actividad.Activo,
+			&actividad.FechaRegistro); handleGenericErrorAc(w, "Failed to scan actividad!", err) {
 			return
 		}
 		actividades = append(actividades, actividad)
 	}
 
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(actividades); handleGenericError(w, "Failed to convert actividades to JSON!", err) {
-		return
-	}
-}
-
-// GetActividadByID retrieves a user from the database by ID.
-func GetActividadByID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	ID, err := strconv.ParseUint(params["id"], 10, 32)
-	if handleGenericError(w, "Failed to convert parameter to integer", err) {
-		return
-	}
-
-	db, err := database.DbConnection()
-	if handleGenericError(w, "Failed to connect to the database!", err) {
-		return
-	}
-	defer db.Close()
-
-	row, err := db.Query("SELECT * FROM usuario WHERE id = ?", ID)
-	if handleGenericError(w, "Failed to retrieve user "+strconv.FormatUint(ID, 10), err) {
-		return
-	}
-	defer row.Close()
-
-	var user User
-	if row.Next() {
-		if err := row.Scan(&user.ID, &user.Nombre, &user.Email, &user.Password, &user.Activo, &user.Fecha); handleGenericError(w, "Failed to scan users!", err) {
-			return
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(user); handleGenericError(w, "Failed to convert user to JSON!", err) {
+	if err := json.NewEncoder(w).Encode(actividades); handleGenericErrorAc(w, "Failed to convert actividades to JSON!", err) {
 		return
 	}
 }
@@ -131,33 +126,43 @@ func UpdateActividad(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	ID, err := strconv.ParseUint(params["id"], 10, 32)
-	if handleGenericError(w, "Failed to convert parameter to integer", err) {
+	if handleGenericErrorAc(w, "Failed to convert parameter to integer", err) {
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
-	if handleGenericError(w, "Failed to read request body!", err) {
+	if handleGenericErrorAc(w, "Failed to read request body!", err) {
 		return
 	}
 
-	var updatedUser User
-	if err = json.Unmarshal(body, &updatedUser); handleGenericError(w, "Failed to unmarshal request body!", err) {
+	var updatedActivity Actividad
+	if err = json.Unmarshal(body, &updatedActivity); handleGenericErrorAc(w, "Failed to unmarshal request body!", err) {
 		return
 	}
 
 	db, err := database.DbConnection()
-	if handleGenericError(w, "Failed to connect to the database!", err) {
+	if handleGenericErrorAc(w, "Failed to connect to the database!", err) {
 		return
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("UPDATE usuario SET name = ?, email = ?, password = ?, activo = ? WHERE id = ?")
-	if handleGenericError(w, "Failed to create statement!", err) {
+	statement, err := db.Prepare("UPDATE actividad SET id_usuario= ?, id_categoria = ?, id_importancia = ?, id_estado = ?, nombre = ?, descripcion = ?, fecha_finaliza = ?, fecha_real_finaliza = ?, activo = ?, fecha_registro = sysdate() WHERE id = ?")
+	if handleGenericErrorAc(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	if _, err := statement.Exec(updatedUser.Nombre, updatedUser.Email, updatedUser.Password, updatedUser.Activo, updatedUser.Fecha, ID); handleGenericError(w, "Failed to execute statement!", err) {
+	if _, err := statement.Exec(
+		updatedActivity.IDUsuario,
+		updatedActivity.IDCategoria,
+		updatedActivity.IDImportancia,
+		updatedActivity.IDEstado,
+		updatedActivity.Nombre,
+		updatedActivity.Descripcion,
+		updatedActivity.FechaFinaliza,
+		updatedActivity.FechaRealFinaliza,
+		updatedActivity.Activo,
+		ID); handleGenericErrorAc(w, "Failed to execute statement!", err) {
 		return
 	}
 
@@ -169,23 +174,23 @@ func DeleteActividad(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	ID, err := strconv.ParseUint(params["id"], 10, 32)
-	if handleGenericError(w, "Failed to convert parameter to integer", err) {
+	if handleGenericErrorAc(w, "Failed to convert parameter to integer", err) {
 		return
 	}
 
 	db, err := database.DbConnection()
-	if handleGenericError(w, "Failed to connect to the database!", err) {
+	if handleGenericErrorAc(w, "Failed to connect to the database!", err) {
 		return
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("DELETE FROM usuario WHERE id = ?")
-	if handleGenericError(w, "Failed to create statement!", err) {
+	statement, err := db.Prepare("DELETE FROM actividad WHERE id = ?")
+	if handleGenericErrorAc(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	if _, err := statement.Exec(ID); handleGenericError(w, "Failed to execute statement!", err) {
+	if _, err := statement.Exec(ID); handleGenericErrorAc(w, "Failed to execute statement!", err) {
 		return
 	}
 
