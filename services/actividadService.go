@@ -197,6 +197,46 @@ func DeleteActividad(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// FinalizarActividad updates the data of a user in the database.
+func FinalizarActividad(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	ID, err := strconv.ParseUint(params["id"], 10, 32)
+	if handleGenericErrorAc(w, "Failed to convert parameter to integer", err) {
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if handleGenericErrorAc(w, "Failed to read request body!", err) {
+		return
+	}
+
+	var finalizarActividad Actividad
+	if err = json.Unmarshal(body, &finalizarActividad); handleGenericErrorAc(w, "Failed to unmarshal request body!", err) {
+		return
+	}
+
+	db, err := database.DbConnection()
+	if handleGenericErrorAc(w, "Failed to connect to the database!", err) {
+		return
+	}
+	defer db.Close()
+
+	statement, err := db.Prepare("UPDATE actividad SET fecha_real_finaliza = sysdate(), activo = 'N' WHERE id = ?")
+	if handleGenericErrorAc(w, "Failed to create statement!", err) {
+		return
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(
+		finalizarActividad.FechaRealFinaliza,
+		finalizarActividad.Activo,
+		ID); handleGenericErrorAc(w, "Failed to execute statement!", err) {
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
 func handleGenericErrorAc(w http.ResponseWriter, errorMessage string, err error) bool {
 	if err != nil {
 		http.Error(w, errorMessage, http.StatusInternalServerError)
