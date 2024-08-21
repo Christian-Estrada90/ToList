@@ -38,7 +38,7 @@ func main() {
 	router.HandleFunc("/actividades/{id_usuario}", userService.GetActividad).Methods(http.MethodGet)
 	router.HandleFunc("/actividades/{id}", userService.UpdateActividad).Methods(http.MethodPut)
 	router.HandleFunc("/actividades/{id}", userService.DeleteActividad).Methods(http.MethodDelete)
-	router.HandleFunc("/actividades/{id}", userService.FinalizarActividad).Methods(http.MethodPut)
+	router.HandleFunc("/FinalizarActividad/{id}", userService.FinalizarActividad).Methods(http.MethodPut)
 
 	//Categorias
 	router.HandleFunc("/categorias", userService.GetCategorias).Methods(http.MethodGet)

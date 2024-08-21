@@ -89,7 +89,7 @@ func GetActividad(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM actividad WHERE id_usuario = ? ORDER BY id_estado asc", IDUsuario)
+	rows, err := db.Query("SELECT * FROM actividad WHERE id_usuario = ? ORDER BY id_estado asc, fecha_real_finaliza desc", IDUsuario)
 	if handleGenericErrorAc(w, "Failed to retrieve actividad!", err) {
 		return
 	}
@@ -222,21 +222,19 @@ func FinalizarActividad(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	statement, err := db.Prepare("UPDATE actividad SET fecha_real_finaliza = sysdate(), activo = 'N' WHERE id = ?")
+	statement, err := db.Prepare("UPDATE actividad SET fecha_real_finaliza = sysdate(), id_estado = 3 WHERE id = ?")
 	if handleGenericErrorAc(w, "Failed to create statement!", err) {
 		return
 	}
 	defer statement.Close()
 
-	if _, err := statement.Exec(
-		finalizarActividad.FechaRealFinaliza,
-		finalizarActividad.Activo,
-		ID); handleGenericErrorAc(w, "Failed to execute statement!", err) {
+	if _, err := statement.Exec(ID); handleGenericErrorAc(w, "Failed to execute statement!", err) {
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 func handleGenericErrorAc(w http.ResponseWriter, errorMessage string, err error) bool {
 	if err != nil {
 		http.Error(w, errorMessage, http.StatusInternalServerError)
