@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -117,6 +120,57 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(user); handleGenericError(w, "Failed to convert user to JSON!", err) {
+		return
+	}
+}
+
+// LoginUser authenticates a user using their email and password.
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	// Parse the email and password from the request body.
+	var creds struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+		return
+	}
+
+	db, err := database.DbConnection()
+	if handleGenericError(w, "Failed to connect to the database!", err) {
+		return
+	}
+	defer db.Close()
+
+	// Query the database for the user with the provided email.
+	var user User
+	row := db.QueryRow("SELECT id, email, password FROM usuario WHERE email = ?", creds.Email)
+	err = row.Scan(&user.ID, &user.Email, &user.Password)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Failed to retrieve user", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Compare the provided password with the stored password.
+	if user.Password != creds.Password {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	// Respond with the user's ID if the authentication is successful.
+	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(struct {
+		ID uint64 `json:"id"`
+	}{
+		ID: uint64(user.ID), // Convertir uint32 a uint64
+	})
+	if err != nil {
+		http.Error(w, "Failed to convert user to JSON", http.StatusInternalServerError)
 		return
 	}
 }

@@ -33,6 +33,8 @@ func main() {
 	router.HandleFunc("/users/{id}", userService.GetUserByID).Methods(http.MethodGet)
 	router.HandleFunc("/users/{id}", userService.UpdateUser).Methods(http.MethodPut)
 	router.HandleFunc("/users/{id}", userService.DeleteUser).Methods(http.MethodDelete)
+	//Login
+	router.HandleFunc("/login", userService.LoginUser).Methods(http.MethodPost)
 	//Actividades
 	router.HandleFunc("/actividades", userService.CreateActividad).Methods(http.MethodPost)
 	router.HandleFunc("/actividades/{id_usuario}", userService.GetActividad).Methods(http.MethodGet)
